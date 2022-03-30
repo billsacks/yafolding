@@ -48,6 +48,14 @@
   :type 'boolean
   :group 'yafolding)
 
+(defcustom yafolding-show-all-during-isearch t
+  "Temporarily show all regions during isearch?
+Non-nil means all yafolding regions are temporarily expanded as soon as isearch starts.
+nil means regions are only expanded when they are entered during the search."
+  :tag "Show all during isearch?"
+  :type 'boolean
+  :group 'yafolding)
+
 (defun yafolding-get-overlays (beg end)
   "Get all overlays between BEG and END."
   (delq nil
@@ -139,6 +147,15 @@ If given, toggle all entries that start at INDENT-LEVEL."
                      (list (lambda (overlay &optional a b c d)
                              (delete-overlay overlay))))
         (overlay-put new-overlay 'before-string before-string)
+        (unless yafolding-show-all-during-isearch
+          (overlay-put new-overlay 'isearch-open-invisible-temporary
+                       (lambda (this-overlay make-invisible)
+                         (if make-invisible
+                             (overlay-put this-overlay 'invisible t)
+                           (overlay-put this-overlay 'invisible nil))))
+          (overlay-put new-overlay 'isearch-open-invisible
+                       (lambda (this-overlay)
+                         (delete-overlay this-overlay))))
         (overlay-put new-overlay 'category "yafolding"))))
 
 (defun yafolding-debug ()
@@ -189,15 +206,19 @@ If given, toggle all entries that start at INDENT-LEVEL."
       (yafolding-show-element)
     (yafolding-hide-element)))
 
-(add-hook 'isearch-mode-hook
-          (lambda() (mapcar (lambda (overlay)
-                          (overlay-put overlay 'invisible nil))
-                        (yafolding-get-overlays (point-min) (point-max)))))
+(defun yafolding-enter-isearch-mode ()
+  (when yafolding-show-all-during-isearch
+      (mapcar (lambda (overlay)
+                (overlay-put overlay 'invisible nil))
+              (yafolding-get-overlays (point-min) (point-max)))))
+(add-hook 'isearch-mode-hook 'yafolding-enter-isearch-mode)
 
-(add-hook 'isearch-mode-end-hook
-          (lambda() (mapcar (lambda (overlay)
-                          (overlay-put overlay 'invisible t))
-                        (yafolding-get-overlays (point-min) (point-max)))))
+(defun yafolding-exit-isearch-mode ()
+  (when yafolding-show-all-during-isearch
+      (mapcar (lambda (overlay)
+                (overlay-put overlay 'invisible t))
+              (yafolding-get-overlays (point-min) (point-max)))))
+(add-hook 'isearch-mode-end-hook 'yafolding-exit-isearch-mode)
 
 (defun yafolding-go-parent-element ()
   "Go back to parent element."
