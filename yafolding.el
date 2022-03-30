@@ -48,7 +48,7 @@
   :type 'boolean
   :group 'yafolding)
 
-(defcustom yafolding-show-all-during-isearch t
+(defcustom yafolding-show-all-during-isearch nil
   "Temporarily show all regions during isearch?
 Non-nil means all yafolding regions are temporarily expanded as soon as isearch starts.
 nil means regions are only expanded when they are entered during the search."
